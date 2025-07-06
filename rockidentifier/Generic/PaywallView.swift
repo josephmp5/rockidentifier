@@ -180,10 +180,8 @@ struct PaywallView: View {
             .padding(.horizontal)
             .padding(.bottom, 30)
             .padding(.top)
-            .background(
-                .ultraThinMaterial
-                .edgesIgnoringSafeArea(.bottom)
-            )
+            .background(.ultraThinMaterial)
+            .edgesIgnoringSafeArea(.bottom)
             , alignment: .bottom
         )
     }
