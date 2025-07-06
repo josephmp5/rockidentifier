@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HistoryView: View {
+    @Binding var showPaywall: Bool
     @StateObject private var historyManager = HistoryManager.shared
     @State private var showingClearAlert = false
 
@@ -10,7 +11,8 @@ struct HistoryView: View {
     ]
 
     var body: some View {
-        ZStack {
+        NavigationStack {
+            ZStack {
             ThemeColors.background.edgesIgnoringSafeArea(.all)
             
             VStack {
@@ -24,6 +26,11 @@ struct HistoryView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button(action: { showPaywall = true }) {
+                        Image(systemName: "crown.fill")
+                            .foregroundColor(ThemeColors.primaryAction)
+                    }
+
                     if !historyManager.history.isEmpty {
                         Button {
                             showingClearAlert = true

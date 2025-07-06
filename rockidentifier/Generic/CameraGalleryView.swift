@@ -3,6 +3,8 @@ import PhotosUI
 import FirebaseFunctions
 
 struct CameraGalleryView: View {
+    @Binding var showPaywall: Bool
+
     // Image & Navigation State
     @State private var showingCamera = false
     @State private var inputImage: UIImage?
@@ -21,14 +23,14 @@ struct CameraGalleryView: View {
 
     // Token & Paywall State
     @EnvironmentObject private var userManager: UserManager
-    @State private var showPaywall = false
 
     private var greeting: String {
         return "Identify a New Rock"
     }
 
     var body: some View {
-        ZStack {
+        NavigationStack {
+            ZStack {
             ThemeColors.background.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
@@ -88,14 +90,23 @@ struct CameraGalleryView: View {
             
             // Loading Overlay
             if isIdentifying {
-                Color.black.opacity(0.6).edgesIgnoringSafeArea(.all)
                 AnalyzingView()
             }
             
-            // Invisible navigation link
+            // Invisible navigation link for result screen
             if let result = identificationResult, let image = inputImage {
                 NavigationLink(destination: ResultsView(result: result, image: image), isActive: $navigateToResults) {
                     EmptyView()
+                }
+            }
+        }
+        .navigationTitle("Crystara")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { showPaywall = true }) {
+                    Image(systemName: "crown.fill")
+                        .foregroundColor(ThemeColors.primaryAction)
                 }
             }
         }
@@ -105,12 +116,8 @@ struct CameraGalleryView: View {
         }
         .onChange(of: selectedItem, perform: loadImage)
         .confirmationDialog("Select a Photo", isPresented: $showImageSourceSelector, titleVisibility: .visible) {
-            Button("Camera") {
-                showingCamera = true
-            }
-            Button("Photo Library") {
-                showPhotoPicker = true
-            }
+            Button("Camera") { showingCamera = true }
+            Button("Photo Library") { showPhotoPicker = true }
         }
         .photosPicker(isPresented: $showPhotoPicker, selection: $selectedItem, matching: .images)
         .alert(isPresented: $showErrorAlert) {
@@ -120,11 +127,6 @@ struct CameraGalleryView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView(isModal: true)
-                .interactiveDismissDisabled()
-        }
-        .navigationBarHidden(true)
     }
 
     private func clearImage() {

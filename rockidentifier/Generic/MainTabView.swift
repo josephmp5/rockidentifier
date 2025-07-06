@@ -10,32 +10,18 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            TabView {
-                CameraGalleryView()
-                    .tabItem {
-                        Label("Identify", systemImage: "camera.viewfinder")
-                    }
-
-                HistoryView()
-                    .tabItem {
-                        Label("History", systemImage: "clock.fill")
-                    }
-            }
-            .tint(ThemeColors.primaryAction) // Sets the selected tab item color
-            .navigationTitle("Crystara")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showPaywall = true
-                    }) {
-                        Image(systemName: "crown.fill")
-                            .foregroundColor(ThemeColors.primaryAction)
-                    }
+        TabView {
+            CameraGalleryView(showPaywall: $showPaywall)
+                .tabItem {
+                    Label("Identify", systemImage: "camera.viewfinder")
                 }
-            }
+
+            HistoryView(showPaywall: $showPaywall)
+                .tabItem {
+                    Label("History", systemImage: "clock.fill")
+                }
         }
+        .tint(ThemeColors.primaryAction) // Sets the selected tab item color
     }
 }
 
