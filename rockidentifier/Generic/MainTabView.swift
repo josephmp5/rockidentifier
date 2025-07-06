@@ -22,7 +22,7 @@ struct MainTabView: View {
                     }
             }
             .tint(ThemeColors.primaryAction) // Sets the selected tab item color
-            .navigationTitle("Rock Identifier")
+            .navigationTitle("Crystara")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

@@ -231,7 +231,7 @@
 				AE3061622E08C74F007EEC39 /* FirebaseVertexAI */,
 				AE84F3402E0B587000C3384D /* GoogleGenerativeAI */,
 			);
-			productName = IdentifierBoilerplate;
+			productName = Crystara;
 			productReference = AE610AF52DFF5D710036E1F7 /* rockidentifier.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -254,7 +254,7 @@
 			name = rockidentifierTests;
 			packageProductDependencies = (
 			);
-			productName = IdentifierBoilerplateTests;
+			productName = CrystaraTests;
 			productReference = AE610B022DFF5D740036E1F7 /* rockidentifierTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
@@ -277,7 +277,7 @@
 			name = rockidentifierUITests;
 			packageProductDependencies = (
 			);
-			productName = IdentifierBoilerplateUITests;
+			productName = CrystaraUITests;
 			productReference = AE610B0C2DFF5D740036E1F7 /* rockidentifierUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
