@@ -92,7 +92,7 @@ class PurchasesManager: NSObject, ObservableObject, PurchasesDelegate {
                 print("No current offering found.")
             }
         } catch {
-            print("Error fetching offerings: \(error.localizedDescription)")
+            print("Error fetching offerings. Full Error: \(error)")
             self.offerings = nil
         }
     }
