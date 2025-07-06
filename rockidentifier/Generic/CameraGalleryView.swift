@@ -2,6 +2,8 @@ import SwiftUI
 import PhotosUI
 import FirebaseFunctions
 
+// MARK: - Main View
+
 struct CameraGalleryView: View {
     @Binding var showPaywall: Bool
 
@@ -9,137 +11,141 @@ struct CameraGalleryView: View {
         self._showPaywall = showPaywall
     }
 
-    // Image & Navigation State
+    // State Properties
     @State private var showingCamera = false
     @State private var inputImage: UIImage?
     @State private var selectedItem: PhotosPickerItem?
     @State private var navigateToResults = false
-
-    // API & Loading State
     @State private var isIdentifying = false
     @State private var identificationResult: RockIdentificationResult?
     @State private var errorMessage: String?
     @State private var showErrorAlert = false
-
-    // Image Selection State
     @State private var showImageSourceSelector = false
     @State private var showPhotoPicker = false
-
-    // Token & Paywall State
     @EnvironmentObject private var userManager: UserManager
-
-    private var greeting: String {
-        return "Identify a New Rock"
-    }
 
     var body: some View {
         NavigationStack {
             ZStack {
-            ThemeColors.background.edgesIgnoringSafeArea(.all)
-            
-            VStack(spacing: 20) {
+                ThemeColors.background.edgesIgnoringSafeArea(.all)
 
+                VStack(spacing: 20) {
+                    Spacer()
 
-                Spacer()
-
-                if let inputImage = inputImage {
-                    ImagePreview(image: inputImage, onClear: clearImage)
-                        .transition(.asymmetric(insertion: .scale(scale: 0.8).combined(with: .opacity), removal: .opacity))
-                } else {
-                    // Clickable Placeholder
-                    VStack(spacing: 16) {
-                        Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 60))
-                            .foregroundColor(ThemeColors.primaryAction.opacity(0.8))
-                        Text("Select a Photo to Begin")
-                            .font(.system(size: 20, weight: .bold, design: .serif))
-                            .foregroundColor(ThemeColors.primaryText)
-                        Text("Choose an image from your gallery or take a new one with your camera.")
-                            .font(.subheadline)
-                            .foregroundColor(ThemeColors.secondaryText)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
+                    if let inputImage = inputImage {
+                        ImagePreview(image: inputImage, onClear: clearImage)
+                            .transition(.asymmetric(insertion: .scale(scale: 0.8).combined(with: .opacity), removal: .opacity))
+                    } else {
+                        placeholder
+                            .transition(.asymmetric(insertion: .opacity, removal: .scale(scale: 0.8).combined(with: .opacity)))
                     }
-                    .padding(30)
-                    .frame(maxWidth: .infinity)
-                    .background(ThemeColors.surface)
-                    .cornerRadius(20)
-                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-                    .onTapGesture {
-                        showImageSourceSelector = true
-                    }
-                    .transition(.asymmetric(insertion: .opacity, removal: .scale(scale: 0.8).combined(with: .opacity)))
-                }
 
-                Spacer()
+                    Spacer()
 
-                if inputImage != nil {
-                    Button(action: performIdentification) {
-                        Text("Identify This Rock")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(ThemeColors.primaryAction)
-                            .cornerRadius(16)
+                    if inputImage != nil {
+                        identifyButton
+                            .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
                     }
-                    .disabled(isIdentifying)
-                    .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+                .animation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0), value: inputImage)
+
+                // Overlays
+                if isIdentifying {
+                    AnalyzingView()
+                }
+                
+                // Navigation
+                if let result = identificationResult, let image = inputImage {
+                    NavigationLink(destination: ResultsView(result: result, image: image), isActive: $navigateToResults) {
+                        EmptyView()
+                    }
                 }
             }
-            .padding(.horizontal)
-            .padding(.bottom)
-            .animation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0), value: inputImage)
-            
-            // Loading Overlay
-            if isIdentifying {
-                AnalyzingView()
-            }
-            
-            // Invisible navigation link for result screen
-            if let result = identificationResult, let image = inputImage {
-                NavigationLink(destination: ResultsView(result: result, image: image), isActive: $navigateToResults) {
-                    EmptyView()
+            .navigationTitle("Crystara")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showPaywall = true }) {
+                        Image(systemName: "crown.fill")
+                            .foregroundColor(ThemeColors.primaryAction)
+                    }
                 }
             }
-        }
-        .navigationTitle("Crystara")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showPaywall = true }) {
-                    Image(systemName: "crown.fill")
-                        .foregroundColor(ThemeColors.primaryAction)
-                }
+            .fullScreenCover(isPresented: $showingCamera) {
+                ImagePicker(sourceType: .camera, selectedImage: $inputImage)
+                    .ignoresSafeArea()
+            }
+            .onChange(of: selectedItem, perform: loadImage)
+            .confirmationDialog("Select a Photo", isPresented: $showImageSourceSelector, titleVisibility: .visible) {
+                Button("Camera") { showingCamera = true }
+                Button("Photo Library") { showPhotoPicker = true }
+            }
+            .photosPicker(isPresented: $showPhotoPicker, selection: $selectedItem, matching: .images)
+            .alert(isPresented: $showErrorAlert) {
+                Alert(
+                    title: Text("Identification Failed"),
+                    message: Text(errorMessage ?? "An unknown error occurred."),
+                    dismissButton: .default(Text("OK"))
+                )
             }
         }
-        .fullScreenCover(isPresented: $showingCamera) {
-            ImagePicker(sourceType: .camera, selectedImage: $inputImage)
-                .ignoresSafeArea()
+    }
+}
+
+// MARK: - View Components
+
+private extension CameraGalleryView {
+    var placeholder: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "photo.on.rectangle.angled")
+                .font(.system(size: 60))
+                .foregroundColor(ThemeColors.primaryAction.opacity(0.8))
+            Text("Select a Photo to Begin")
+                .font(.system(size: 20, weight: .bold, design: .serif))
+                .foregroundColor(ThemeColors.primaryText)
+            Text("Choose an image from your gallery or take a new one with your camera.")
+                .font(.subheadline)
+                .foregroundColor(ThemeColors.secondaryText)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
         }
-        .onChange(of: selectedItem, perform: loadImage)
-        .confirmationDialog("Select a Photo", isPresented: $showImageSourceSelector, titleVisibility: .visible) {
-            Button("Camera") { showingCamera = true }
-            Button("Photo Library") { showPhotoPicker = true }
-        }
-        .photosPicker(isPresented: $showPhotoPicker, selection: $selectedItem, matching: .images)
-        .alert(isPresented: $showErrorAlert) {
-            Alert(
-                title: Text("Identification Failed"),
-                message: Text(errorMessage ?? "An unknown error occurred."),
-                dismissButton: .default(Text("OK"))
-            )
+        .padding(30)
+        .frame(maxWidth: .infinity)
+        .background(ThemeColors.surface)
+        .cornerRadius(20)
+        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .onTapGesture {
+            showImageSourceSelector = true
         }
     }
 
-    private func clearImage() {
+    var identifyButton: some View {
+        Button(action: performIdentification) {
+            Text("Identify This Rock")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(ThemeColors.primaryAction)
+                .cornerRadius(16)
+        }
+        .disabled(isIdentifying)
+    }
+}
+
+// MARK: - Logic Methods
+
+private extension CameraGalleryView {
+    func clearImage() {
         inputImage = nil
         selectedItem = nil
         identificationResult = nil
     }
 
-    private func loadImage(from newItem: PhotosPickerItem?) {
+    func loadImage(from newItem: PhotosPickerItem?) {
         Task {
             guard let newItem = newItem, let data = try? await newItem.loadTransferable(type: Data.self) else { return }
             if let newImage = UIImage(data: data) {
@@ -148,7 +154,7 @@ struct CameraGalleryView: View {
         }
     }
 
-    private func performIdentification() {
+    func performIdentification() {
         isIdentifying = true
 
         guard let image = inputImage else {
@@ -158,7 +164,6 @@ struct CameraGalleryView: View {
             return
         }
 
-        // High-quality data for history
         guard let historyImageData = image.jpegData(compressionQuality: 1.0) else {
             errorMessage = "Could not process the selected image for history."
             showErrorAlert = true
@@ -166,7 +171,6 @@ struct CameraGalleryView: View {
             return
         }
 
-        // Resized, compressed data for the API call to make it fast
         guard let apiImageData = image.resized(to: CGSize(width: 1024, height: 1024), compressionQuality: 0.8) else {
             errorMessage = "Could not resize the image for identification."
             showErrorAlert = true
@@ -216,7 +220,7 @@ struct CameraGalleryView: View {
     }
 }
 
-// MARK: - Redesigned Subviews
+// MARK: - Helper Views
 
 struct ImagePreview: View {
     let image: UIImage
@@ -242,88 +246,6 @@ struct ImagePreview: View {
     }
 }
 
-struct PlaceholderImageView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "mountain.2.fill")
-                .font(.system(size: 80))
-                .foregroundColor(ThemeColors.accent)
-            Text("Select a photo to begin")
-                .font(.title3)
-                .fontWeight(.medium)
-                .foregroundColor(ThemeColors.secondaryText)
-        }
-        .frame(maxWidth: .infinity, maxHeight: 350)
-        .background(ThemeColors.surface.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(ThemeColors.accent, style: StrokeStyle(lineWidth: 2, dash: [10]))
-        )
-        .padding(.horizontal, 20)
-    }
-}
-
-struct ActionButtonsView: View {
-    @Binding var showingCamera: Bool
-    @Binding var selectedItem: PhotosPickerItem?
-
-    var body: some View {
-        VStack(spacing: 16) {
-            PhotosPicker(
-                selection: $selectedItem,
-                matching: .images,
-                photoLibrary: .shared()
-            ) {
-                HStack {
-                    Image(systemName: "photo.on.rectangle.angled")
-                    Text("Choose from Library")
-                }
-                .font(.headline)
-                .fontWeight(.bold)
-                .foregroundColor(ThemeColors.primaryText)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(ThemeColors.surface)
-                .cornerRadius(12)
-            }
-            
-            Button(action: { showingCamera = true }) {
-                HStack {
-                    Image(systemName: "camera.fill")
-                    Text("Use Camera")
-                }
-                .font(.headline)
-                .fontWeight(.bold)
-                .foregroundColor(ThemeColors.primaryText)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(ThemeColors.surface)
-                .cornerRadius(12)
-            }
-        }
-    }
-}
-
-struct PrimaryButton: View {
-    let title: String
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 18, weight: .bold, design: .default))
-                .foregroundColor(ThemeColors.background)
-                .padding(.vertical, 15)
-                .frame(maxWidth: .infinity)
-                .background(ThemeColors.primaryText)
-                .cornerRadius(12)
-                .shadow(color: ThemeColors.primaryText.opacity(0.3), radius: 8, y: 4)
-        }
-    }
-}
-
-// ImagePicker remains the same
 struct ImagePicker: UIViewControllerRepresentable {
     var sourceType: UIImagePickerController.SourceType = .photoLibrary
     @Binding var selectedImage: UIImage?
@@ -359,9 +281,12 @@ struct ImagePicker: UIViewControllerRepresentable {
     }
 }
 
+// MARK: - Preview
+
 struct CameraGalleryView_Previews: PreviewProvider {
     static var previews: some View {
-        CameraGalleryView()
+        CameraGalleryView(showPaywall: .constant(false))
+            .environmentObject(UserManager())
     }
 }
 
