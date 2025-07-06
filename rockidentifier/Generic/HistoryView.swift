@@ -2,6 +2,11 @@ import SwiftUI
 
 struct HistoryView: View {
     @Binding var showPaywall: Bool
+
+    init(showPaywall: Binding<Bool>) {
+        self._showPaywall = showPaywall
+    }
+
     @StateObject private var historyManager = HistoryManager.shared
     @State private var showingClearAlert = false
 

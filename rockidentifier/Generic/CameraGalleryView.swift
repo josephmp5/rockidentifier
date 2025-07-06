@@ -5,6 +5,10 @@ import FirebaseFunctions
 struct CameraGalleryView: View {
     @Binding var showPaywall: Bool
 
+    init(showPaywall: Binding<Bool>) {
+        self._showPaywall = showPaywall
+    }
+
     // Image & Navigation State
     @State private var showingCamera = false
     @State private var inputImage: UIImage?
