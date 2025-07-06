@@ -1,9 +1,10 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @State private var showPaywall = false
+    @Binding var showPaywall: Bool
 
-    init() {
+    init(showPaywall: Binding<Bool>) {
+        self._showPaywall = showPaywall
         // Set the unselected tab bar item color
         UITabBar.appearance().unselectedItemTintColor = UIColor(ThemeColors.secondaryText)
     }
@@ -34,16 +35,13 @@ struct MainTabView: View {
                     }
                 }
             }
-            .fullScreenCover(isPresented: $showPaywall) {
-                PaywallView(isModal: false)
-            }
         }
     }
 }
 
 struct MainTabView_Previews: PreviewProvider {
     static var previews: some View {
-        MainTabView()
+        MainTabView(showPaywall: .constant(false))
             .environmentObject(PurchasesManager.shared) // For previewing
     }
 }
