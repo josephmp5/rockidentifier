@@ -1,3 +1,4 @@
+// Force re-compile
 import SwiftUI
 
 struct HistoryView: View {
@@ -10,7 +11,7 @@ struct HistoryView: View {
     @StateObject private var historyManager = HistoryManager.shared
     @State private var showingClearAlert = false
 
-    private let columns: [GridItem] = [
+    fileprivate let columns: [GridItem] = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
     ]
@@ -18,43 +19,44 @@ struct HistoryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-            ThemeColors.background.edgesIgnoringSafeArea(.all)
-            
-            VStack {
-                if historyManager.history.isEmpty {
-                    emptyStateView
-                } else {
-                    historyGridView
-                }
-            }
-            .navigationTitle("My Collection")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button(action: { showPaywall = true }) {
-                        Image(systemName: "crown.fill")
-                            .foregroundColor(ThemeColors.primaryAction)
-                    }
+                ThemeColors.background.edgesIgnoringSafeArea(.all)
 
-                    if !historyManager.history.isEmpty {
-                        Button {
-                            showingClearAlert = true
-                        } label: {
-                            Image(systemName: "trash")
-                                .foregroundColor(ThemeColors.accent)
+                VStack {
+                    if historyManager.history.isEmpty {
+                        emptyStateView
+                    } else {
+                        historyGridView
+                    }
+                }
+                .navigationTitle("My Collection")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItemGroup(placement: .navigationBarTrailing) {
+                        Button(action: { showPaywall = true }) {
+                            Image(systemName: "crown.fill")
+                                .foregroundColor(ThemeColors.primaryAction)
+                        }
+
+                        if !historyManager.history.isEmpty {
+                            Button {
+                                showingClearAlert = true
+                            } label: {
+                                Image(systemName: "trash")
+                                    .foregroundColor(ThemeColors.accent)
+                            }
                         }
                     }
                 }
-            }
-            .alert(isPresented: $showingClearAlert) {
-                Alert(
-                    title: Text("Clear History"),
-                    message: Text("Are you sure you want to delete all identification history? This action cannot be undone."),
-                    primaryButton: .destructive(Text("Clear")) {
-                        historyManager.clearHistory()
-                    },
-                    secondaryButton: .cancel()
-                )
+                .alert(isPresented: $showingClearAlert) {
+                    Alert(
+                        title: Text("Clear History"),
+                        message: Text("Are you sure you want to delete all identification history? This action cannot be undone."),
+                        primaryButton: .destructive(Text("Clear")) {
+                            historyManager.clearHistory()
+                        },
+                        secondaryButton: .cancel()
+                    )
+                }
             }
         }
     }
@@ -71,7 +73,7 @@ private extension HistoryView {
             .padding()
         }
     }
-    
+
     var emptyStateView: some View {
         VStack {
             Spacer()
@@ -97,7 +99,7 @@ private extension HistoryView {
 
 struct HistoryCardView: View {
     let item: HistoryItem
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let uiImage = UIImage(data: item.imageData) {
@@ -117,14 +119,14 @@ struct HistoryCardView: View {
                 }
                 .frame(height: 120)
             }
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.rockName)
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(ThemeColors.primaryText)
                     .lineLimit(1)
-                
+
                 Text(item.date, style: .date)
                     .font(.subheadline)
                     .foregroundColor(ThemeColors.secondaryText)
@@ -145,3 +147,4 @@ struct HistoryView_Previews: PreviewProvider {
         .preferredColorScheme(.dark)
     }
 }
+
