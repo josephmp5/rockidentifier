@@ -30,6 +30,8 @@ struct CameraGalleryView: View {
                 ThemeColors.background.edgesIgnoringSafeArea(.all)
 
                 VStack(spacing: 20) {
+                    headerView
+
                     Spacer()
 
                     if let inputImage = inputImage {
@@ -97,6 +99,17 @@ struct CameraGalleryView: View {
 // MARK: - View Components
 
 private extension CameraGalleryView {
+    var headerView: some View {
+        VStack {
+            Text("Rock Identifier")
+                .font(.system(size: 32, weight: .bold, design: .serif))
+                .foregroundColor(ThemeColors.primaryText)
+            Text("Discover the world around you.")
+                .font(.system(size: 16, weight: .medium, design: .serif))
+                .foregroundColor(ThemeColors.secondaryText)
+        }
+    }
+
     var placeholder: some View {
         VStack(spacing: 16) {
             Image(systemName: "photo.on.rectangle.angled")
