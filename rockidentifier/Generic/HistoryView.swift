@@ -28,35 +28,35 @@ struct HistoryView: View {
                         historyGridView
                     }
                 }
-                .navigationTitle("My Collection")
-                .navigationBarTitleDisplayMode(.large)
-                .toolbar {
-                    ToolbarItemGroup(placement: .navigationBarTrailing) {
-                        Button(action: { showPaywall = true }) {
-                            Image(systemName: "crown.fill")
-                                .foregroundColor(ThemeColors.primaryAction)
-                        }
+            }
+            .navigationTitle("My Collection")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button(action: { showPaywall = true }) {
+                        Image(systemName: "crown.fill")
+                            .foregroundColor(ThemeColors.primaryAction)
+                    }
 
-                        if !historyManager.history.isEmpty {
-                            Button {
-                                showingClearAlert = true
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundColor(ThemeColors.accent)
-                            }
+                    if !historyManager.history.isEmpty {
+                        Button {
+                            showingClearAlert = true
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundColor(ThemeColors.accent)
                         }
                     }
                 }
-                .alert(isPresented: $showingClearAlert) {
-                    Alert(
-                        title: Text("Clear History"),
-                        message: Text("Are you sure you want to delete all identification history? This action cannot be undone."),
-                        primaryButton: .destructive(Text("Clear")) {
-                            historyManager.clearHistory()
-                        },
-                        secondaryButton: .cancel()
-                    )
-                }
+            }
+            .alert(isPresented: $showingClearAlert) {
+                Alert(
+                    title: Text("Clear History"),
+                    message: Text("Are you sure you want to delete all identification history? This action cannot be undone."),
+                    primaryButton: .destructive(Text("Clear")) {
+                        historyManager.clearHistory()
+                    },
+                    secondaryButton: .cancel()
+                )
             }
         }
     }
