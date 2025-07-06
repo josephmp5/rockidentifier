@@ -58,8 +58,10 @@ struct HistoryView: View {
             }
         }
     }
-    
-    private var historyGridView: some View {
+}
+
+private extension HistoryView {
+    var historyGridView: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(historyManager.history) {
@@ -70,7 +72,7 @@ struct HistoryView: View {
         }
     }
     
-    private var emptyStateView: some View {
+    var emptyStateView: some View {
         VStack {
             Spacer()
             Image(systemName: "rectangle.stack.fill.badge.plus")
@@ -138,7 +140,7 @@ struct HistoryCardView: View {
 struct HistoryView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            HistoryView()
+            HistoryView(showPaywall: .constant(false))
         }
         .preferredColorScheme(.dark)
     }
