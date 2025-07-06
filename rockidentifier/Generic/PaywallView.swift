@@ -21,25 +21,14 @@ struct PaywallView: View {
     let premiumFeatures: [PremiumFeature] = [
         PremiumFeature(icon: "sparkles", title: "AI-Powered Precision", description: "Get the most accurate rock identifications."),
         PremiumFeature(icon: "infinity.circle.fill", title: "Unlimited Identifications", description: "Scan and identify as many rocks as you find."),
-        PremiumFeature(icon: "gem.fill", title: "Build Your Collection", description: "Save every discovery to your personal journal."),
-        PremiumFeature(icon: "viewfinder.off", title: "Ad-Free Exploration", description: "Enjoy a focused experience without interruptions.")
+        PremiumFeature(icon: "rhombus.fill", title: "Build Your Collection", description: "Save every discovery to your personal journal."),
+        PremiumFeature(icon: "eye.slash.fill", title: "Ad-Free Exploration", description: "Enjoy a focused experience without interruptions.")
     ]
 
     var body: some View {
         ZStack {
-            // Background Image
-            Image("paywall_background")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .edgesIgnoringSafeArea(.all)
-
-            // Gradient Overlay
-            Rectangle()
-                .fill(LinearGradient(
-                    gradient: Gradient(colors: [.black.opacity(0.8), .black.opacity(0.4), .clear]),
-                    startPoint: .bottom,
-                    endPoint: .top
-                ))
+            // Background
+            ThemeColors.background
                 .edgesIgnoringSafeArea(.all)
 
             // Main Content
