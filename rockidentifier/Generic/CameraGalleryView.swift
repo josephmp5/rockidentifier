@@ -32,17 +32,7 @@ struct CameraGalleryView: View {
             ThemeColors.background.edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
-                // Header (always visible)
-                VStack {
-                    Text("Rock Identifier")
-                        .font(.system(size: 32, weight: .bold, design: .serif))
-                        .foregroundColor(ThemeColors.primaryText)
-                    
-                    Text("Discover the world around you.")
-                        .font(.headline)
-                        .foregroundColor(ThemeColors.secondaryText)
-                }
-                .padding(.top, 50)
+
 
                 Spacer()
 
