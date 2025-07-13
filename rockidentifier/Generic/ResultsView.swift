@@ -1,178 +1,225 @@
 import SwiftUI
 
 struct ResultsView: View {
-    @Environment(\.presentationMode) var presentationMode
-    
     let result: RockIdentificationResult
     let image: UIImage
 
     var body: some View {
         ZStack {
-            ThemeColors.background.edgesIgnoringSafeArea(.all)
+            // Gradient background
+            LinearGradient(
+                colors: [ThemeColors.background, ThemeColors.surface],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(.all)
             
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
-                    // Header Image with Rock Name
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 350)
-                        .clipped()
-                        .overlay(
-                            LinearGradient(gradient: Gradient(colors: [.clear, ThemeColors.background.opacity(0.2), ThemeColors.background]), startPoint: .top, endPoint: .bottom)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Hero Image Section
+                    ZStack {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 320)
+                            .cornerRadius(20)
+                            .clipped()
+                        
+                        // Overlay gradient
+                        LinearGradient(
+                            colors: [Color.clear, Color.black.opacity(0.3)],
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
-                        .overlay(
-                            VStack {
+                        .cornerRadius(20)
+                        
+                        // Confidence badge
+                        VStack {
+                            Spacer()
+                            HStack {
                                 Spacer()
-                                Text(result.rockName)
-                                    .font(.system(size: 44, weight: .bold, design: .serif))
-                                    .foregroundColor(ThemeColors.primaryText)
-                                    .shadow(color: ThemeColors.background.opacity(0.5), radius: 10)
-                                    .padding()
+                                VStack(spacing: 4) {
+                                    Text("🎯")
+                                        .font(.title2)
+                                    Text(String(format: "%.0f%%", result.confidence * 100))
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                    Text("Match")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                .padding(12)
+                                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                                .padding(16)
                             }
-                        )
-
-                    InfoSectionView(title: "Description", content: result.description, icon: icon(for: "Description"))
-
-                    InfoSectionView(title: "Geological Context", content: result.geologicalContext, icon: icon(for: "Geological Context"))
-
-                    InfoSectionView(title: "Fun Fact", content: result.funFact, icon: icon(for: "Fun Fact"))
+                        }
+                    }
+                    .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 8)
+                    
+                    // Rock Name & Description
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("🧿")
+                                .font(.title)
+                            Text(result.rockName)
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundColor(ThemeColors.primaryText)
+                        }
+                        
+                        Text(result.description)
+                            .font(.body)
+                            .foregroundColor(ThemeColors.secondaryText)
+                            .lineSpacing(2)
+                    }
+                    .padding(20)
+                    .background(ThemeColors.surface, in: RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
 
                     // Properties Section
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Properties")
-                            .font(.system(size: 22, weight: .bold, design: .serif))
-                            .foregroundColor(ThemeColors.primaryText)
-                            .padding(.horizontal)
-                        
-                        let rockProperties: [(key: String, value: String)] = [
-                            ("Color", result.properties.color),
-                            ("Streak", result.properties.streak),
-                            ("Hardness", result.properties.hardness),
-                            ("Crystal System", result.properties.crystalSystem),
-                            ("Market Value", result.marketValue)
-                        ].filter { !$0.value.isEmpty }
-
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible())], spacing: 16) {
-                            ForEach(rockProperties, id: \.key) { property in
-                                let iconInfo = icon(for: property.key)
-                                PropertyCardView(key: property.key, value: property.value, iconName: iconInfo.systemName, iconColor: iconInfo.color)
-                            }
+                        HStack {
+                            Text("🔍")
+                                .font(.title2)
+                            Text("Rock Properties")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(ThemeColors.primaryText)
                         }
-                        .padding(.horizontal)
+                        
+                        VStack(spacing: 12) {
+                            PropertyRow(icon: "🎨", title: "Color", value: result.properties.color, color: .orange)
+                            PropertyRow(icon: "✏️", title: "Streak", value: result.properties.streak, color: .brown)
+                            PropertyRow(icon: "🔨", title: "Hardness", value: result.properties.hardness, color: .cyan)
+                            PropertyRow(icon: "🔶", title: "Crystal System", value: result.properties.crystalSystem, color: .purple)
+                        }
+                    }
+                    .padding(20)
+                    .background(ThemeColors.surface, in: RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+
+                    // Detailed Information Sections
+                    VStack(spacing: 16) {
+                        DetailSection(
+                            icon: "🌍", 
+                            title: "Geological Context", 
+                            content: result.geologicalContext,
+                            color: .green
+                        )
+                        
+                        DetailSection(
+                            icon: "🤔", 
+                            title: "Fun Fact", 
+                            content: result.funFact,
+                            color: .blue
+                        )
+                        
+                        DetailSection(
+                            icon: "💰", 
+                            title: "Market Value", 
+                            content: result.marketValue,
+                            color: .yellow
+                        )
                     }
                 }
-                .padding(.bottom, 40)
-            }
-            
-            // Close Button
-            VStack {
-                HStack {
-                    Spacer()
-                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.subheadline.weight(.bold))
-                            .foregroundColor(ThemeColors.primaryText)
-                            .padding(12)
-                            .background(ThemeColors.surface.opacity(0.8))
-                            .clipShape(Circle())
-                            .shadow(radius: 5)
-                    }
-                }
-                .padding()
-                Spacer()
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
             }
         }
-        .navigationBarHidden(true)
-    }
-    
-    private func icon(for key: String) -> (systemName: String, color: Color) {
-        switch key {
-        // Section Icons
-        case "Description":
-            return ("text.alignleft", .blue)
-        case "Geological Context":
-            return ("globe.americas.fill", .green)
-        case "Fun Fact":
-            return ("sparkles", .orange)
-        // Property Icons
-        case "Color":
-            return ("paintpalette.fill", .purple)
-        case "Streak":
-            return ("scribble.variable", .brown)
-        case "Hardness":
-            return ("diamond.fill", .cyan)
-        case "Crystal System":
-            return ("square.on.square", .indigo)
-        case "Market Value":
-            return ("dollarsign.circle.fill", .yellow)
-        default:
-            return ("questionmark.circle", .gray)
-        }
+        .navigationTitle("Result")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
-struct InfoSectionView: View {
+// MARK: - Beautiful Components
+
+private struct PropertyRow: View {
+    let icon: String
     let title: String
-    let content: String
-    let icon: (systemName: String, color: Color)
+    let value: String
+    let color: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Image(systemName: icon.systemName)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(icon.color)
-                    .frame(width: 30, height: 30)
-                    .background(icon.color.opacity(0.15))
-                    .clipShape(Circle())
+        HStack(spacing: 16) {
+            // Icon container
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.2))
+                    .frame(width: 40, height: 40)
+                
+                Text(icon)
+                    .font(.title3)
+            }
+            
+            // Content
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 22, weight: .bold, design: .serif))
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(ThemeColors.secondaryText)
+                
+                Text(value)
+                    .font(.body)
+                    .fontWeight(.semibold)
                     .foregroundColor(ThemeColors.primaryText)
             }
             
-            Text(content)
-                .font(.system(size: 17, weight: .regular, design: .default))
-                .foregroundColor(ThemeColors.secondaryText)
-                .lineSpacing(5)
+            Spacer()
+            
+            // Decorative element
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(color)
         }
-        .padding()
-        .background(ThemeColors.surface)
-        .cornerRadius(16)
-        .padding(.horizontal)
+        .padding(16)
+        .background(color.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
     }
 }
 
-struct PropertyCardView: View {
-    let key: String
-    let value: String
-    let iconName: String
-    let iconColor: Color
+private struct DetailSection: View {
+    let icon: String
+    let title: String
+    let content: String
+    let color: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: iconName)
-                .font(.system(size: 20, weight: .medium))
-                .foregroundColor(iconColor)
-
-            Text(key)
-                .font(.system(size: 14, weight: .medium, design: .serif))
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    
+                    Text(icon)
+                        .font(.title2)
+                }
+                
+                Text(title)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(ThemeColors.primaryText)
+                
+                Spacer()
+            }
+            
+            // Content
+            Text(content)
+                .font(.body)
                 .foregroundColor(ThemeColors.secondaryText)
-
-            Text(value)
-                .font(.system(size: 16, weight: .bold, design: .default))
-                .foregroundColor(ThemeColors.primaryText)
-                .fixedSize(horizontal: false, vertical: true) // Allow text to wrap
-
-            Spacer(minLength: 0)
+                .lineSpacing(3)
+                .padding(.leading, 8)
         }
-        .padding()
-        .frame(maxWidth: .infinity, minHeight: 100, alignment: .leading)
-        .background(ThemeColors.surface)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .padding(20)
+        .background(ThemeColors.surface, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(color.opacity(0.2), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
     }
 }
+
 
 struct ResultsView_Previews: PreviewProvider {
     static var previews: some View {

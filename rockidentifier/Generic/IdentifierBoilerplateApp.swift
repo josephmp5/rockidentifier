@@ -61,6 +61,7 @@ struct IdentifierBoilerplateApp: App {
             ContentView()
                 .environmentObject(userManager)
                 .environmentObject(PurchasesManager.shared)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }

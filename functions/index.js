@@ -429,13 +429,10 @@ exports.consumeToken = onCall(async (request) => {
 
       const userData = userDoc.data();
 
-      // 2. Premium users have unlimited access, no token change.
-      if (userData.isPremium === true || userData.subscriptionActive === true) {
-        logger.info(
-            `User ${firebaseUid} is premium. Allowing action without cost.`,
-        );
-        return {success: true, tokensRemaining: "unlimited"};
-      }
+      // All users consume tokens, including premium users
+      logger.info(
+          `Processing token consumption for user ${firebaseUid}`,
+      );
 
       // 3. Check if the user has enough tokens.
       const currentTokens = userData.tokens || 0;

@@ -10,9 +10,9 @@ struct UserModel: Codable, Identifiable {
     let subscriptionActive: Bool?
     let tokens: Int?
 
-    // We can add a computed property for convenience to check if the user has access.
+    // All users need tokens to access identification features
     var hasAccess: Bool {
-        return isPremium == true || subscriptionActive == true || (tokens ?? 0) > 0
+        return (tokens ?? 0) > 0
     }
 
     enum CodingKeys: String, CodingKey {

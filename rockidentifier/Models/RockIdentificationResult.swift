@@ -1,7 +1,8 @@
 import Foundation
 
 // This struct needs to match the JSON object returned by the Firebase Function.
-struct RockIdentificationResult: Decodable, Hashable {
+struct RockIdentificationResult: Decodable, Hashable, Identifiable {
+    var id = UUID()
     let rockName: String
     let confidence: Double
     let description: String

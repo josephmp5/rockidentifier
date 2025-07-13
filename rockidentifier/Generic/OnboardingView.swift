@@ -38,7 +38,9 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            ThemeColors.background.edgesIgnoringSafeArea(.all)
+            // Ensure full screen coverage
+            ThemeColors.background
+                .ignoresSafeArea(.all)
 
             TabView(selection: $currentPage) {
                 ForEach(pages.indices, id: \.self) { index in
@@ -54,6 +56,7 @@ struct OnboardingView: View {
                     .padding(.bottom, 40)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -94,7 +97,19 @@ struct OnboardingScreenView: View {
 
             if page.showsDismissButton {
                 Button(action: {
-                    isOnboardingComplete = true
+                    // First, sign in the user anonymously.
+                    AuthService.shared.signInAnonymously { result in
+                        switch result {
+                        case .success(let user):
+                            print("Onboarding: Anonymous sign-in successful for user \(user.uid).")
+                            // Now that sign-in is complete, dismiss the onboarding flow.
+                            isOnboardingComplete = true
+                        case .failure(let error):
+                            // If sign-in fails, we should not proceed. 
+                            // For now, we just log the error. A real app might show an alert.
+                            print("Critical: Onboarding failed to sign in user anonymously. Error: \(error.localizedDescription)")
+                        }
+                    }
                 }) {
                     Text("Get Started")
                         .font(.headline)

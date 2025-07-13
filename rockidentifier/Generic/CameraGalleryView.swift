@@ -2,6 +2,13 @@ import SwiftUI
 import PhotosUI
 import FirebaseFunctions
 
+struct ViewFrameKey: PreferenceKey {
+    static var defaultValue: CGRect = .zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        value = nextValue()
+    }
+}
+
 // MARK: - Main View
 
 struct CameraGalleryView: View {
@@ -22,76 +29,98 @@ struct CameraGalleryView: View {
     @State private var showErrorAlert = false
     @State private var showImageSourceSelector = false
     @State private var showPhotoPicker = false
+    @State private var placeholderFrame: CGRect = .zero
     @EnvironmentObject private var userManager: UserManager
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                ThemeColors.background.edgesIgnoringSafeArea(.all)
-
-                VStack(spacing: 20) {
-                    headerView
-
-                    Spacer()
-
-                    if let inputImage = inputImage {
-                        ImagePreview(image: inputImage, onClear: clearImage)
-                            .transition(.asymmetric(insertion: .scale(scale: 0.8).combined(with: .opacity), removal: .opacity))
-                    } else {
-                        placeholder
-                            .transition(.asymmetric(insertion: .opacity, removal: .scale(scale: 0.8).combined(with: .opacity)))
-                    }
-
-                    Spacer()
-
-                    if inputImage != nil {
-                        identifyButton
-                            .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .opacity))
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.bottom)
-                .animation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0), value: inputImage)
-
-                // Overlays
-                if isIdentifying {
-                    AnalyzingView()
-                }
+        VStack(spacing: 20) {
+            // Always show header
+            headerView
+            
+            if isIdentifying {
+                AnalyzingView()
+            } else if let inputImage = inputImage {
+                // Show image with some spacing
+                Spacer(minLength: 20)
+                ImagePreview(image: inputImage, onClear: clearImage)
+                    .transition(.asymmetric(insertion: .scale(scale: 0.8).combined(with: .opacity), removal: .opacity))
                 
-                // Navigation
+                // Keep some informational text
+                Text("Ready to identify your rock?")
+                    .font(.system(size: 18, weight: .medium, design: .serif))
+                    .foregroundColor(ThemeColors.secondaryText)
+                    .padding(.top, 10)
+                
+                identifyButton
+                Spacer()
+            } else {
+                Spacer()
+                placeholder
+                Spacer()
+            }
+        }
+        .padding(.horizontal)
+        .background(ThemeColors.background.edgesIgnoringSafeArea(.all))
+        .animation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0), value: inputImage)
+        .background(
+            Group {
                 if let result = identificationResult, let image = inputImage {
-                    NavigationLink(destination: ResultsView(result: result, image: image), isActive: $navigateToResults) {
+                    NavigationLink(
+                        destination: ResultsView(result: result, image: image)
+                            .onDisappear {
+                                // Clear the result when coming back from ResultsView
+                                identificationResult = nil
+                                navigateToResults = false
+                            },
+                        isActive: $navigateToResults
+                    ) {
                         EmptyView()
                     }
                 }
             }
-            .navigationTitle("Crystara")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showPaywall = true }) {
-                        Image(systemName: "crown.fill")
-                            .foregroundColor(ThemeColors.primaryAction)
+        )
+        .onChange(of: navigateToResults) { isActive in
+            if !isActive {
+                // Also clear result when navigation becomes inactive
+                identificationResult = nil
+            }
+        }
+        .fullScreenCover(isPresented: $showingCamera) {
+            ImagePicker(sourceType: .camera, selectedImage: $inputImage)
+                .ignoresSafeArea()
+        }
+        .onChange(of: selectedItem, perform: loadImage)
+        .onPreferenceChange(ViewFrameKey.self) { frame in
+            placeholderFrame = frame
+        }
+        .sheet(isPresented: $showImageSourceSelector) {
+            PhotoSourceSelectionView(
+                onCameraSelected: {
+                    showImageSourceSelector = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        showingCamera = true
                     }
+                },
+                onPhotoLibrarySelected: {
+                    showImageSourceSelector = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        showPhotoPicker = true
+                    }
+                },
+                onCancel: {
+                    showImageSourceSelector = false
                 }
-            }
-            .fullScreenCover(isPresented: $showingCamera) {
-                ImagePicker(sourceType: .camera, selectedImage: $inputImage)
-                    .ignoresSafeArea()
-            }
-            .onChange(of: selectedItem, perform: loadImage)
-            .confirmationDialog("Select a Photo", isPresented: $showImageSourceSelector, titleVisibility: .visible) {
-                Button("Camera") { showingCamera = true }
-                Button("Photo Library") { showPhotoPicker = true }
-            }
-            .photosPicker(isPresented: $showPhotoPicker, selection: $selectedItem, matching: .images)
-            .alert(isPresented: $showErrorAlert) {
-                Alert(
-                    title: Text("Identification Failed"),
-                    message: Text(errorMessage ?? "An unknown error occurred."),
-                    dismissButton: .default(Text("OK"))
-                )
-            }
+            )
+            .presentationDetents([.height(200)])
+            .presentationDragIndicator(.visible)
+        }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $selectedItem, matching: .images)
+        .alert(isPresented: $showErrorAlert) {
+            Alert(
+                title: Text("Identification Failed"),
+                message: Text(errorMessage ?? "An unknown error occurred."),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 }
@@ -132,6 +161,9 @@ private extension CameraGalleryView {
         .onTapGesture {
             showImageSourceSelector = true
         }
+        .background(GeometryReader { geometry in
+            Color.clear.preference(key: ViewFrameKey.self, value: geometry.frame(in: .global))
+        })
     }
 
     var identifyButton: some View {
@@ -193,18 +225,43 @@ private extension CameraGalleryView {
 
         guard let user = userManager.user else {
             errorMessage = "Could not verify your user profile. Please check your connection and try again."
-            showErrorAlert = true
             isIdentifying = false
-            return
-        }
-
-        if !user.hasAccess {
             showPaywall = true
-            isIdentifying = false
             return
         }
         
-        FirebaseAPIService.shared.identifyRock(imageData: apiImageData) { result in
+        print("Consuming token for user. Current tokens: \(user.tokens ?? 0), isPremium: \(user.isPremium ?? false)")
+        userManager.consumeToken { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    // Token consumed successfully, proceed with identification
+                    print("Token consumption successful, proceeding with identification")
+                    self.performRockIdentification(imageData: apiImageData, historyImageData: historyImageData)
+                    
+                case .failure(let error):
+                    // Token consumption failed
+                    print("Token consumption failed: \(error.localizedDescription)")
+                    self.isIdentifying = false
+                    let nsError = error as NSError
+                    if nsError.domain == FunctionsErrorDomain,
+                       let code = FunctionsErrorCode(rawValue: nsError.code),
+                       code == .failedPrecondition {
+                        // Out of tokens - show paywall directly without error message
+                        print("Out of tokens, showing paywall")
+                        self.showPaywall = true
+                    } else {
+                        // Other errors - show paywall instead of error alert
+                        print("Token consumption error, showing paywall")
+                        self.showPaywall = true
+                    }
+                }
+            }
+        }
+    }
+    
+    private func performRockIdentification(imageData: Data, historyImageData: Data) {
+        FirebaseAPIService.shared.identifyRock(imageData: imageData) { result in
             DispatchQueue.main.async {
                 self.isIdentifying = false
 
@@ -233,64 +290,68 @@ private extension CameraGalleryView {
     }
 }
 
-// MARK: - Helper Views
+// MARK: - Photo Source Selection Sheet
 
-struct ImagePreview: View {
-    let image: UIImage
-    var onClear: () -> Void
-
+struct PhotoSourceSelectionView: View {
+    let onCameraSelected: () -> Void
+    let onPhotoLibrarySelected: () -> Void
+    let onCancel: () -> Void
+    
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
-
-            Button(action: onClear) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 32))
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, Color.black.opacity(0.6))
-                    .shadow(color: .black.opacity(0.5), radius: 3, x: 0, y: 2)
+        VStack(spacing: 20) {
+            // Handle
+            RoundedRectangle(cornerRadius: 2.5)
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 40, height: 5)
+                .padding(.top, 8)
+            
+            // Title
+            Text("Select a Photo")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(ThemeColors.primaryText)
+            
+            // Buttons
+            HStack(spacing: 40) {
+                // Camera Button
+                Button(action: onCameraSelected) {
+                    VStack(spacing: 8) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+                            .frame(width: 50, height: 50)
+                            .background(ThemeColors.primaryAction)
+                            .clipShape(Circle())
+                        
+                        Text("Camera")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(ThemeColors.primaryText)
+                    }
+                }
+                
+                // Photo Library Button
+                Button(action: onPhotoLibrarySelected) {
+                    VStack(spacing: 8) {
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+                            .frame(width: 50, height: 50)
+                            .background(ThemeColors.accent)
+                            .clipShape(Circle())
+                        
+                        Text("Photo Library")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(ThemeColors.primaryText)
+                    }
+                }
             }
-            .padding(8)
+            
+            Spacer()
         }
-    }
-}
-
-struct ImagePicker: UIViewControllerRepresentable {
-    var sourceType: UIImagePickerController.SourceType = .photoLibrary
-    @Binding var selectedImage: UIImage?
-    @Environment(\.presentationMode) private var presentationMode
-
-    func makeUIViewController(context: UIViewControllerRepresentableContext<ImagePicker>) -> UIImagePickerController {
-        let imagePicker = UIImagePickerController()
-        imagePicker.allowsEditing = false
-        imagePicker.sourceType = sourceType
-        imagePicker.delegate = context.coordinator
-        return imagePicker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePicker>) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        var parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage {
-                parent.selectedImage = image
-            }
-            parent.presentationMode.wrappedValue.dismiss()
-        }
+        .frame(maxWidth: .infinity)
+        .background(ThemeColors.background)
     }
 }
 

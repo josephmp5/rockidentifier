@@ -2,62 +2,34 @@
 import SwiftUI
 
 struct HistoryView: View {
-    @Binding var showPaywall: Bool
-
-    init(showPaywall: Binding<Bool>) {
-        self._showPaywall = showPaywall
-    }
-
     @StateObject private var historyManager = HistoryManager.shared
     @State private var showingClearAlert = false
 
     fileprivate let columns: [GridItem] = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
     ]
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                ThemeColors.background.edgesIgnoringSafeArea(.all)
+        ZStack {
+            ThemeColors.background
+                .ignoresSafeArea(.all)
 
-                VStack {
-                    if historyManager.history.isEmpty {
-                        emptyStateView
-                    } else {
-                        historyGridView
-                    }
-                }
+            if historyManager.history.isEmpty {
+                emptyStateView
+            } else {
+                historyGridView
             }
-            .navigationTitle("My Collection")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button(action: { showPaywall = true }) {
-                        Image(systemName: "crown.fill")
-                            .foregroundColor(ThemeColors.primaryAction)
-                    }
-
-                    if !historyManager.history.isEmpty {
-                        Button {
-                            showingClearAlert = true
-                        } label: {
-                            Image(systemName: "trash")
-                                .foregroundColor(ThemeColors.accent)
-                        }
-                    }
-                }
-            }
-            .alert(isPresented: $showingClearAlert) {
-                Alert(
-                    title: Text("Clear History"),
-                    message: Text("Are you sure you want to delete all identification history? This action cannot be undone."),
-                    primaryButton: .destructive(Text("Clear")) {
-                        historyManager.clearHistory()
-                    },
-                    secondaryButton: .cancel()
-                )
-            }
+        }
+        .alert(isPresented: $showingClearAlert) {
+            Alert(
+                title: Text("Clear History"),
+                message: Text("Are you sure you want to delete all identification history? This action cannot be undone."),
+                primaryButton: .destructive(Text("Clear")) {
+                    historyManager.clearHistory()
+                },
+                secondaryButton: .cancel()
+            )
         }
     }
 }
@@ -65,35 +37,61 @@ struct HistoryView: View {
 private extension HistoryView {
     var historyGridView: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(historyManager.history) {
-                    HistoryCardView(item: $0)
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(historyManager.history) { item in
+                    NavigationLink(destination: ResultsView(result: RockIdentificationResult(
+                        rockName: item.rockName,
+                        confidence: 0.95,
+                        description: "Historical identification",
+                        properties: RockProperties(
+                            color: "Unknown",
+                            streak: "Unknown",
+                            hardness: "Unknown",
+                            crystalSystem: "Unknown"
+                        ),
+                        geologicalContext: "Previously identified crystal",
+                        funFact: "This crystal was identified from your collection.",
+                        marketValue: "Value varies based on quality and size"
+                    ), image: UIImage(data: item.imageData) ?? UIImage())) {
+                        HistoryCardView(item: item)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
         }
     }
 
     var emptyStateView: some View {
-        VStack {
+        VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "rectangle.stack.fill.badge.plus")
-                .font(.system(size: 60))
-                .foregroundColor(ThemeColors.accent)
-            Text("No History Yet")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(ThemeColors.primaryText)
-                .padding(.top)
-            Text("Your identified rocks will appear here.")
-                .font(.headline)
-                .fontWeight(.medium)
-                .foregroundColor(ThemeColors.secondaryText)
-            Spacer()
+            
+            ZStack {
+                Circle()
+                    .fill(ThemeColors.accent.opacity(0.15))
+                    .frame(width: 120, height: 120)
+                
+                Image(systemName: "rectangle.stack.fill.badge.plus")
+                    .font(.system(size: 50, weight: .medium))
+                    .foregroundColor(ThemeColors.accent)
+            }
+            
+            VStack(spacing: 12) {
+                Text("No History Yet")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(ThemeColors.primaryText)
+                
+                Text("Your identified crystals will appear here.")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(ThemeColors.secondaryText)
+                    .multilineTextAlignment(.center)
+            }
+            
             Spacer()
         }
-        .multilineTextAlignment(.center)
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 24)
     }
 }
 
@@ -102,12 +100,14 @@ struct HistoryCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Image section with better aspect ratio
             if let uiImage = UIImage(data: item.imageData) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(height: 120)
+                    .frame(height: 140)
                     .clipped()
+                    .cornerRadius(12, corners: [.topLeft, .topRight])
             } else {
                 ZStack {
                     ThemeColors.surface
@@ -117,34 +117,41 @@ struct HistoryCardView: View {
                         .frame(width: 40, height: 40)
                         .foregroundColor(ThemeColors.accent.opacity(0.6))
                 }
-                .frame(height: 120)
+                .frame(height: 140)
+                .cornerRadius(12, corners: [.topLeft, .topRight])
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            // Text content with better spacing
+            VStack(alignment: .leading, spacing: 6) {
                 Text(item.rockName)
-                    .font(.headline)
-                    .fontWeight(.bold)
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(ThemeColors.primaryText)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
 
                 Text(item.date, style: .date)
-                    .font(.subheadline)
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(ThemeColors.secondaryText)
             }
-            .padding()
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(ThemeColors.surface)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(ThemeColors.accent.opacity(0.1), lineWidth: 1)
+        )
     }
 }
 
 struct HistoryView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            HistoryView(showPaywall: .constant(false))
+            HistoryView()
         }
         .preferredColorScheme(.dark)
     }
 }
-

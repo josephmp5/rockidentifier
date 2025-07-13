@@ -13,13 +13,21 @@ struct ContentView: View {
     @State private var showPaywall: Bool = false
 
     var body: some View {
-        Group {
-            if isOnboardingComplete {
-                MainTabView(showPaywall: $showPaywall)
-            } else {
-                OnboardingView(isOnboardingComplete: $isOnboardingComplete)
+        ZStack {
+            // Ensure full screen background coverage
+            ThemeColors.background
+                .ignoresSafeArea(.all)
+            
+            Group {
+                if isOnboardingComplete {
+                    MainTabView()
+                } else {
+                    OnboardingView(isOnboardingComplete: $isOnboardingComplete)
+                }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .edgesIgnoringSafeArea(.all)
         .onChange(of: isOnboardingComplete) { isComplete in
             if isComplete && !hasPresentedInitialPaywall {
                 showPaywall = true
@@ -27,7 +35,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showPaywall) {
-            PaywallView(isModal: true)
+            PaywallView()
         }
     }
 }

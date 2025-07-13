@@ -62,14 +62,14 @@ class UserManager: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        functions.httpsCallable("consumeToken").call { [weak self] result, error in
+        functions.httpsCallable("consumeToken").call { result, error in
             DispatchQueue.main.async {
-                self?.isLoading = false
+                self.isLoading = false
                 if let error = error as NSError? {
                     let nsError = error as NSError
                     // Extract the user-friendly message from the HttpsError details
                     let message = nsError.userInfo[FunctionsErrorDetailsKey] as? String ?? nsError.localizedDescription
-                    self?.errorMessage = message
+                    self.errorMessage = message
                     print("Error consuming token: \(message)")
                     completion(.failure(nsError))
                     return
@@ -78,13 +78,14 @@ class UserManager: ObservableObject {
                 guard let data = result?.data as? [String: Any],
                       let success = data["success"] as? Bool, success else {
                     let genericError = NSError(domain: "AppError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Token consumption failed due to an unknown server error."])
-                    self?.errorMessage = "Token consumption failed."
+                    self.errorMessage = "Token consumption failed."
                     completion(.failure(genericError))
                     return
                 }
                 
                 // Success! The token was consumed (or user is premium).
                 // The local user model will update automatically via the Firestore listener.
+                print("Token consumption successful!")
                 completion(.success(()))
             }
         }
